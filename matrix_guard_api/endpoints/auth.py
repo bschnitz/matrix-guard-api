@@ -4,6 +4,7 @@ from fastapi import APIRouter, Request, Response, Depends
 from matrix_guard_api.services.matrix_auth_service import MatrixAuthService
 from matrix_guard_api.services.session_service import SessionService
 from matrix_guard_api.config_service import ConfigService
+from matrix_guard_api.services.tuwunel_admin_service import TuwunelAdminService
 
 router = APIRouter()
 
@@ -14,26 +15,38 @@ async def create_session(
     auth: Annotated[MatrixAuthService, Depends()],
     sessions: Annotated[SessionService, Depends()],
     config: Annotated[ConfigService, Depends()],
+    tuwunel: Annotated[TuwunelAdminService, Depends()],
 ):
     body = await request.json() if await request.body() else {}
 
-    # Token extrahieren
-    if not (auth_header := request.headers.get("Authorization")):
-        return Response("Missing Authorization header", status_code=401)
-    token = auth_header.replace("Bearer ", "")
+    # Pflichtfelder prüfen
+    if not (room_id := body.get("roomId")):
+        return Response("Missing roomId", status_code=400)
+    if not (event_id := body.get("eventId")):
+        return Response("Missing eventId", status_code=400)
 
-    # matrix_server_name aus Body holen (vom Widget mitgesendet)
-    if not (matrix_server_name := body.get("matrix_server_name")):
-        return Response("Missing matrix_server_name", status_code=400)
+    # Bot dem Raum beitreten (falls noch nicht geschehen)
+    if not tuwunel.join_room(room_id):
+        return Response("Could not join room", status_code=500)
 
-    # OpenID Token über Federation API validieren
-    if not (user_id := auth.validate_openid_token(token, matrix_server_name)):
-        return Response("Invalid token", status_code=401)
+    # Event abrufen
+    if not (event := tuwunel.get_event(room_id, event_id)):
+        return Response("Event not found", status_code=404)
+
+    # Event-Typ prüfen
+    if event.get("type") != "org.curiosity_summit.guard.auth_request":
+        return Response("Invalid event type", status_code=400)
+
+    # Sender ist der authentifizierte User
+    if not (user_id := event.get("sender")):
+        return Response("Event has no sender", status_code=400)
+
+    # Berechtigung prüfen
     if not auth.is_user_allowed(user_id):
         return Response("Forbidden", status_code=403)
 
-    pad_name = body.get("padName")
-    room_id = body.get("roomId")
+    # Session erstellen
+    pad_name = body.get("padName") or room_id
     session_id = sessions.create_session(user_id, pad_name, room_id)
 
     response.set_cookie(
@@ -65,7 +78,6 @@ async def auth_check(
             "X-Auth-User": session["user_id"],
         },
     )
-
 
 @router.post("/api/logout")
 async def logout(
