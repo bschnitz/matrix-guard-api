@@ -1,3 +1,4 @@
+# matrix_guard_api/config_service.py
 from datetime import timedelta
 from pydantic_settings import BaseSettings
 
@@ -9,6 +10,7 @@ class Config(BaseSettings):
     SESSION_LIFETIME_HOURS: int = 24
     SESSION_COOKIE_NAME: str = "session"
     ORIGINS: str = ""
+    SESSION_DB_PATH: str = "sessions.db"
 
     class Config:
         env_file = ".env"
@@ -29,6 +31,5 @@ class ConfigService:
         )
         self.session_cookie_name = raw.SESSION_COOKIE_NAME
         self.session_lifetime = timedelta(hours=raw.SESSION_LIFETIME_HOURS)
-        self.allowed_origins = [
-            o.strip() for o in raw.ORIGINS.split(",") if o.strip()
-        ]
+        self.allowed_origins = [o.strip() for o in raw.ORIGINS.split(",") if o.strip()]
+        self.session_db_path = raw.SESSION_DB_PATH
