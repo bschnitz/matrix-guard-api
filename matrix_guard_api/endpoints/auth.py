@@ -8,7 +8,7 @@ from matrix_guard_api.services.tuwunel_admin_service import TuwunelAdminService
 
 router = APIRouter()
 
-@router.post("/api/session")
+@router.post("/guard/api/session")
 async def create_session(
     request: Request,
     response: Response,
@@ -60,7 +60,7 @@ async def create_session(
     )
     return {"success": True, "user_id": user_id}
 
-@router.get("/auth")
+@router.get("/guard/api/auth")
 async def auth_check(
     request: Request,
     sessions: Annotated[SessionService, Depends()],
@@ -80,7 +80,7 @@ async def auth_check(
         },
     )
 
-@router.post("/api/logout")
+@router.post("/guard/api/logout")
 async def logout(
     request: Request,
     sessions: Annotated[SessionService, Depends()],
