@@ -8,7 +8,7 @@ class Config(BaseSettings):
     ETHERPAD_URL: str = "http://etherpad:9001"
     ALLOWED_USERS: str = ""  # comma separated
     SESSION_LIFETIME_HOURS: int = 24
-    SESSION_COOKIE_NAME: str = "session"
+    SESSION_COOKIE_NAME: str = "guard_session"
     ORIGINS: str = ""
     SESSION_DB_PATH: str = "sessions.db"
     SERVER_ADMIN_TOKEN: str = ""
