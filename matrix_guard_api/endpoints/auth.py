@@ -55,6 +55,7 @@ async def create_session(
         httponly=True,
         secure=True,
         samesite="none",
+        domain=".curiosity-summit.org",
         max_age=int(config.session_lifetime.total_seconds()),
     )
     return {"success": True, "user_id": user_id}
